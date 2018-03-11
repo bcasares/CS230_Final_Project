@@ -48,12 +48,15 @@ if __name__ == "__main__":
     params = Params(json_path)
 
     # Perform hypersearch over one parameter
-    learning_rates = [1e-4, 1e-3, 1e-2]
+    # learning_rates = [1e-4, 1e-3, 1e-2]
+    weight_decay = [1e-4, 1e-3, 1e-2]
 
     for learning_rate in learning_rates:
         # Modify the relevant parameter in params
-        params.learning_rate = learning_rate
+        # params.learning_rate = learning_rate
+        params.weight_decay = learning_rate
 
         # Launch job (name has to be unique)
-        job_name = "learning_rate_{}".format(learning_rate)
+        # job_name = "learning_rate_{}".format(learning_rate)
+        job_name = "weight_decay_{}".format(weight_decay)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
