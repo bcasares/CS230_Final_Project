@@ -49,12 +49,13 @@ if __name__ == "__main__":
 
     # Perform hypersearch over one parameter
     # learning_rates = [1e-4, 1e-3, 1e-2]
-    weight_decay = [1e-4, 1e-3, 1e-2]
+    weight_decays = [1e-4, 1e-3, 1e-2]
 
-    for learning_rate in learning_rates:
+    # for learning_rate in learning_rates:
+    for weight_decay in weight_decays:
         # Modify the relevant parameter in params
         # params.learning_rate = learning_rate
-        params.weight_decay = learning_rate
+        params.weight_decay = weight_decay
 
         # Launch job (name has to be unique)
         # job_name = "learning_rate_{}".format(learning_rate)
