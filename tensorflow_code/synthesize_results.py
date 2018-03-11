@@ -37,12 +37,14 @@ def aggregate_metrics(parent_dir, metrics):
 
 
 def metrics_to_table(metrics):
-    # Get the headers from the first subdir. Assumes everything has the same metrics
+    # Calculate the F2 score and create the metrics table.
 
-    precision = metrics[list(metrics.keys())[0]]["precision"]
-    recall = metrics[list(metrics.keys())[0]]["recall"]
-    F2_metric = 5*precision*recall/(4*precision + recall)
-    metrics[list(metrics.keys())[0]]["F2"] = F2_metric
+    for metric in list(metrics.keys()):
+        precision = metrics[metric]["precision"]
+        recall = metrics[metric]["recall"]
+        F2_metric = 5*precision*recall/(4*precision + recall)
+        metrics[metric]["F2"] = F2_metric
+
     headers = metrics[list(metrics.keys())[0]].keys()
     table = [[subdir] + [values[h] for h in headers] for subdir, values in metrics.items()]
     res = tabulate(table, headers, tablefmt='pipe')
