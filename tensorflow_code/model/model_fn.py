@@ -27,7 +27,9 @@ def build_model(is_training, inputs, params):
     channels = [num_channels, num_channels * 2, num_channels * 4, num_channels * 8]
     for i, c in enumerate(channels):
         with tf.variable_scope('block_{}'.format(i+1)):
-            out = tf.layers.conv2d(out, c, 3, padding='same')
+            # out = tf.layers.conv2d(out, c, 3, padding='same')
+            out = tf.contrib.layers.conv2d(out, c, 3, padding='same',
+                    weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
             if params.use_batch_norm:
                 out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
             out = tf.nn.relu(out)
@@ -37,12 +39,16 @@ def build_model(is_training, inputs, params):
 
     out = tf.reshape(out, [-1, 4 * 4 * num_channels * 8])
     with tf.variable_scope('fc_1'):
-        out = tf.layers.dense(out, num_channels * 8)
+        # out = tf.layers.dense(out, num_channels * 8)
+        out = tf.contrib.layers.fully_connected(out, num_channels * 8,
+                weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
         if params.use_batch_norm:
             out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
         out = tf.nn.relu(out)
     with tf.variable_scope('fc_2'):
-        logits = tf.layers.dense(out, params.num_labels)
+        # logits = tf.layers.dense(out, params.num_labels)
+        logits = tf.contrib.layers.fully_connected(out, params.num_labels,
+                weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
 
     return logits
 
@@ -72,14 +78,23 @@ def model_fn(mode, inputs, params, reuse=False):
         predictions = tf.round(tf.nn.sigmoid(logits))
 
     # Define loss and accuracy
-    cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
-    loss = cross_entropy + tf.add_n(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+    # loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+    # cyross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+
+    # A value pos_weights > 1 decreases the false negative count, hence increasing the recall.
+    weighted_cross_entropy = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(targets=labels, logits=logits,
+            pos_weight=params.loss_weight))
+    loss = weighted_cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+    # loss = cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
     accuracy = tf.reduce_mean(tf.cast(tf.equal(labels, predictions), tf.float32))
 
     # Define training step that minimizes the loss with the Adam optimizer
     if is_training:
-        optimizer = tf.train.AdamOptimizer(params.learning_rate)
         global_step = tf.train.get_or_create_global_step()
+        starter_learning_rate = params.learning_rate
+        learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                100000, 0.96, staircase=True)
+        optimizer = tf.train.AdamOptimizer(learning_rate)
         if params.use_batch_norm:
             # Add a dependency to update the moving mean and variance for batch normalization
             with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
