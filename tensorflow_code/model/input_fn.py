@@ -1,6 +1,7 @@
 """Create the input data pipeline using `tf.data`"""
 
 import tensorflow as tf
+import numpy as np
 
 
 def _parse_function(filename, label, size):
@@ -28,13 +29,37 @@ def train_preprocess(image, label, use_random_flip):
 
     Apply the following operations:
         - Horizontally flip the image with probability 1/2
-        - Apply random brightness and saturation
     """
     if use_random_flip:
         image = tf.image.random_flip_left_right(image)
 
-    # image = tf.image.random_brightness(image, max_delta=32.0 / 255.0)
-    # image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+    # Make sure the image is still in [0, 1]
+    image = tf.clip_by_value(image, 0.0, 1.0)
+
+    return image, label
+
+def train_preprocess2(image, label, use_random_flip):
+    """Image preprocessing for training.
+
+    Apply the following operations:
+        - Vertically flip the image with probability 1/2
+    """
+    if use_random_flip:
+        image = tf.image.random_flip_up_down(image)
+
+    # Make sure the image is still in [0, 1]
+    image = tf.clip_by_value(image, 0.0, 1.0)
+
+    return image, label
+
+def train_preprocess3(image, label, use_transpose = True):
+    """Image preprocessing for training.
+
+    Apply the following operations:
+        - Transpose the image.
+    """
+    if use_transpose:
+        image = tf.image.transpose_image(image)
 
     # Make sure the image is still in [0, 1]
     image = tf.clip_by_value(image, 0.0, 1.0)
@@ -59,12 +84,16 @@ def input_fn(is_training, filenames, labels, params):
     # We don't repeat for multiple epochs because we always train and evaluate for one epoch
     parse_fn = lambda f, l: _parse_function(f, l, params.image_size)
     train_fn = lambda f, l: train_preprocess(f, l, params.use_random_flip)
+    train_fn2 = lambda f, l: train_preprocess2(f, l, params.use_random_flip)
+    train_fn3 = lambda f, l: train_preprocess3(f, l, params.use_transpose)
 
     if is_training:
         dataset = (tf.data.Dataset.from_tensor_slices((tf.constant(filenames), tf.constant(labels)))
             .shuffle(num_samples)  # whole dataset into the buffer ensures good shuffling
             .map(parse_fn, num_parallel_calls=params.num_parallel_calls)
             .map(train_fn, num_parallel_calls=params.num_parallel_calls)
+            .map(train_fn2, num_parallel_calls=params.num_parallel_calls)
+            .map(train_fn3, num_parallel_calls=params.num_parallel_calls)
             .batch(params.batch_size)
             .prefetch(1)  # make sure you always have one batch ready to serve
         )

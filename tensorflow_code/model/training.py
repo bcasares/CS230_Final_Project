@@ -95,7 +95,7 @@ def train_and_evaluate(train_model_spec, eval_model_spec, model_dir, params, res
         train_writer = tf.summary.FileWriter(os.path.join(model_dir, 'train_summaries'), sess.graph)
         eval_writer = tf.summary.FileWriter(os.path.join(model_dir, 'eval_summaries'), sess.graph)
 
-        best_eval_acc = 0.0
+        best_eval_F2 = 0.0
         for epoch in range(begin_at_epoch, begin_at_epoch + params.num_epochs):
             # Run one epoch
             logging.info("Epoch {}/{}".format(epoch + 1, begin_at_epoch + params.num_epochs))
@@ -112,14 +112,16 @@ def train_and_evaluate(train_model_spec, eval_model_spec, model_dir, params, res
             metrics = evaluate_sess(sess, eval_model_spec, num_steps, eval_writer)
 
             # If best_eval, best_save_path
-            eval_acc = metrics['accuracy']
-            if eval_acc >= best_eval_acc:
+            precision = metrics['precision']
+            recall = metrics['recall']
+            eval_F2 = 5.0*precision*recall/(4.0*precision + recall)
+            if eval_F2 >= best_eval_F2:
                 # Store new best accuracy
-                best_eval_acc = eval_acc
+                best_eval_F2 = eval_F2
                 # Save weights
                 best_save_path = os.path.join(model_dir, 'best_weights', 'after-epoch')
                 best_save_path = best_saver.save(sess, best_save_path, global_step=epoch + 1)
-                logging.info("- Found new best accuracy, saving in {}".format(best_save_path))
+                logging.info("- Found new best F2, saving in {}".format(best_save_path))
                 # Save best eval metrics in a json file in the model directory
                 best_json_path = os.path.join(model_dir, "metrics_eval_best_weights.json")
                 save_dict_to_json(metrics, best_json_path)

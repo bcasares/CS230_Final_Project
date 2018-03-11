@@ -32,7 +32,7 @@ def build_model(is_training, inputs, params):
                 out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
             out = tf.nn.relu(out)
             out = tf.layers.max_pooling2d(out, 2, 2)
-
+            # regularizer = tf.contrib.layers.l2_regularizer(params.weight_decay)
     assert out.get_shape().as_list() == [None, 4, 4, num_channels * 8]
 
     out = tf.reshape(out, [-1, 4 * 4 * num_channels * 8])
@@ -72,7 +72,8 @@ def model_fn(mode, inputs, params, reuse=False):
         predictions = tf.round(tf.nn.sigmoid(logits))
 
     # Define loss and accuracy
-    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+    cross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+    loss = cross_entropy + tf.add_n(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
     accuracy = tf.reduce_mean(tf.cast(tf.equal(labels, predictions), tf.float32))
 
     # Define training step that minimizes the loss with the Adam optimizer
