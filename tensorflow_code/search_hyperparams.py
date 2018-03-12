@@ -49,15 +49,23 @@ if __name__ == "__main__":
 
     # Perform hypersearch over one parameter
     # learning_rates = [1e-4, 1e-3, 1e-2]
-    weight_decays = [1e-4, 1e-3, 1e-2]
+    # weight_decays = [1e-4, 1e-3, 1e-2]
+    # loss_weights = [32, 64]
+    num_channels_list = [32, 64, 128]
 
     # for learning_rate in learning_rates:
-    for weight_decay in weight_decays:
+    # for weight_decay in weight_decays:
+    # for loss_weight in loss_weights:
+    for num_channels in num_channels_list:
         # Modify the relevant parameter in params
         # params.learning_rate = learning_rate
-        params.weight_decay = weight_decay
+        # params.weight_decay = weight_decay
+        # params.loss_weight = loss_weight
+        params.num_channels = num_channels
 
         # Launch job (name has to be unique)
         # job_name = "learning_rate_{}".format(learning_rate)
-        job_name = "weight_decay_{}".format(weight_decay)
+        # job_name = "weight_decay_{}".format(weight_decay)
+        # job_name = "loss_weight_{}".format(loss_weight)
+        job_name = "num_channels_{}".format(num_channels)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
