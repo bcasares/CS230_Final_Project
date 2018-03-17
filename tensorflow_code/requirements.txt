@@ -1,4 +1,3 @@
-numpy
-Pillow
-tabulate
-tqdm
+version https://git-lfs.github.com/spec/v1
+oid sha256:fdd5a25431f4dc8c1172bf76a2a27a1c299851019977935685f37a257bdad029
+size 27
