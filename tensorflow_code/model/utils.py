@@ -1,4 +1,4 @@
-"""General utility functions"""
+"""General utility functions."""
 
 import json
 import logging
