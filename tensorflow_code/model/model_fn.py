@@ -1,4 +1,4 @@
-"""Define the model"""
+"""Define the model."""
 
 
 import tensorflow as tf

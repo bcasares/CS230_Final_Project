@@ -1,4 +1,4 @@
-"""Tensorflow utility functions for training."""
+"""Tensorflow utility functions for training"""
 
 import logging
 import os
