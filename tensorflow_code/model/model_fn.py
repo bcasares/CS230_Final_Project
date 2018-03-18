@@ -4,6 +4,7 @@
 import tensorflow as tf
 import model.resnet as resnet
 
+
 def build_model(is_training, inputs, params):
     """Compute logits of the model (output distribution)
 
@@ -30,7 +31,7 @@ def build_model(is_training, inputs, params):
         with tf.variable_scope('block_{}'.format(i+1)):
             # out = tf.layers.conv2d(out, c, 3, padding='same')
             out = tf.contrib.layers.conv2d(out, c, 3, padding='same',
-                    weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
+                                           weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
             if params.use_batch_norm:
                 out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
             out = tf.nn.relu(out)
@@ -42,16 +43,15 @@ def build_model(is_training, inputs, params):
     with tf.variable_scope('fc_1'):
         # out = tf.layers.dense(out, num_channels * 8)
         out = tf.contrib.layers.fully_connected(out, num_channels * 8,
-                weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
+                                                weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
         if params.use_batch_norm:
             out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
         out = tf.nn.relu(out)
     with tf.variable_scope('fc_2'):
         # logits = tf.layers.dense(out, params.num_labels)
         logits = tf.contrib.layers.fully_connected(out, params.num_labels,
-                weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
+                                                   weights_regularizer=tf.contrib.layers.l2_regularizer(params.weight_decay))
     return logits
-
 
 
 def model_fn(mode, inputs, params, reuse=False):
@@ -75,8 +75,7 @@ def model_fn(mode, inputs, params, reuse=False):
     # MODEL: define the layers of the model
     with tf.variable_scope('model', reuse=reuse):
         # Compute the output distribution of the model and the predictions
-        logits = resnet.build_resnet_18(is_training, inputs, params)
-
+        logits = resnet.build_resnet_(is_training, inputs, params)
 
         logits = build_model(is_training, inputs, params)
         predictions = tf.round(tf.nn.sigmoid(logits))
@@ -87,8 +86,9 @@ def model_fn(mode, inputs, params, reuse=False):
 
     # A value pos_weights > 1 decreases the false negative count, hence increasing the recall.
     weighted_cross_entropy = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(targets=labels, logits=logits,
-            pos_weight=params.loss_weight))
-    loss = weighted_cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+                                                                                     pos_weight=params.loss_weight))
+    loss = weighted_cross_entropy + \
+        tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
     # loss = cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
     accuracy = tf.reduce_mean(tf.cast(tf.equal(labels, predictions), tf.float32))
 
@@ -109,16 +109,15 @@ def model_fn(mode, inputs, params, reuse=False):
         else:
             train_op = optimizer.minimize(loss, global_step=global_step)
 
-
     # -----------------------------------------------------------
     # METRICS AND SUMMARIES
     # Metrics for evaluation using tf.metrics (average over whole dataset)
     with tf.variable_scope("metrics"):
         metrics = {
-            'accuracy': tf.metrics.accuracy(labels=labels, predictions= predictions),
+            'accuracy': tf.metrics.accuracy(labels=labels, predictions=predictions),
             'loss': tf.metrics.mean(loss),
-            'precision': tf.metrics.precision(labels=labels, predictions = predictions),
-            'recall': tf.metrics.recall(labels= labels, predictions = predictions)
+            'precision': tf.metrics.precision(labels=labels, predictions=predictions),
+            'recall': tf.metrics.recall(labels=labels, predictions=predictions)
         }
 
     # Group the update ops for the tf.metrics
@@ -133,15 +132,15 @@ def model_fn(mode, inputs, params, reuse=False):
     tf.summary.scalar('accuracy', accuracy)
     tf.summary.image('train_image', inputs['images'])
 
-    #TODO: if mode == 'eval': ?
+    # TODO: if mode == 'eval': ?
     # Add incorrectly labeled images
     mask = tf.not_equal(labels, predictions)
 
     # Add a different summary to know how they were misclassified
     # for label in range(0, params.num_labels):
-        # mask_label = tf.logical_and(mask, tf.equal(predictions, label))
-        # incorrect_image_label = tf.boolean_mask(inputs['images'], mask_label)
-        # tf.summary.image('incorrectly_labeled_{}'.format(label), incorrect_image_label)
+    # mask_label = tf.logical_and(mask, tf.equal(predictions, label))
+    # incorrect_image_label = tf.boolean_mask(inputs['images'], mask_label)
+    # tf.summary.image('incorrectly_labeled_{}'.format(label), incorrect_image_label)
 
     # -----------------------------------------------------------
     # MODEL SPECIFICATION
