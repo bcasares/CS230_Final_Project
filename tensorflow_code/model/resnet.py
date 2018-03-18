@@ -92,9 +92,10 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format):
   """Strided 2-D convolution with explicit padding."""
   # The padding is consistent and is based only on `kernel_size`, not on the
   # dimensions of `inputs` (as opposed to using `tf.layers.conv2d` alone).
+
   if strides > 1:
     inputs = fixed_padding(inputs, kernel_size, data_format)
-  print("here")
+  print(inputs, filters, kernel_size, strides, data_format)
   return tf.layers.conv2d(
       inputs=inputs, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
@@ -450,12 +451,22 @@ def build_resnet_18(is_training, inputs, params):
                  params.kernel_size,
                  params.conv_stride, params.first_pool_size, params.first_pool_stride,
                  params.second_pool_size, params.second_pool_stride, params.block_sizes, params.block_strides,
-                 params.final_size, version=DEFAULT_VERSION, data_format=None)
+                 params.final_size, version=DEFAULT_VERSION, data_format='channels_last')
+  images = inputs['images']
+  assert images.get_shape().as_list() == [None, params.image_size, params.image_size, 3]
+  out = images
+  return resnet.__call__(out, is_training)
 
-  # logits = build_model(is_training, inputs, params)
-  return resnet.__call__(inputs, is_training)
-  # return Model.__call__(self, inputs, training) input_shape, num_outputs, basic_block, [2, 2, 2, 2])
-
+def build_resnet_50(is_training, inputs, params):
+  resnet = Model(params.resnet_size, params.bottleneck, params.num_classes, params.num_filters,
+                 params.kernel_size,
+                 params.conv_stride, params.first_pool_size, params.first_pool_stride,
+                 params.second_pool_size, params.second_pool_stride, params.block_sizes, params.block_strides,
+                 params.final_size, version=DEFAULT_VERSION, data_format='channels_last')
+  images = inputs['images']
+  assert images.get_shape().as_list() == [None, params.image_size, params.image_size, 3]
+  out = images
+  return resnet.__call__(out, is_training)
 
 # @staticmethod
 # def build_resnet_34(input_shape, num_outputs):
