@@ -19,8 +19,10 @@ from tqdm import tqdm
 SIZE = 64
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', default='data/Amazon_Rainforest_Dataset', help="Directory with the Amazon Rainforest dataset")
-parser.add_argument('--output_dir', default='data/64x64_Amazon_Rainforest_Dataset', help="Where to write the new data")
+parser.add_argument('--data_dir', default='data/Amazon_Rainforest_Dataset',
+                    help="Directory with the Amazon Rainforest dataset")
+parser.add_argument('--output_dir', default='data/64x64_Amazon_Rainforest_Dataset',
+                    help="Where to write the new data")
 
 
 def resize_and_save(filename, output_dir, size=SIZE):
@@ -45,9 +47,9 @@ if __name__ == '__main__':
 
     # Split the images in 'Amazon_Rainforest_Dataset' into 60% train and 20% dev and 20% test.
     # Make sure to always shuffle with a fixed seed so that the split is reproducible
-    filenames_labels = filenames_labels.sample(frac=1, random_state = 230).reset_index(drop=True)
-    split = int(0.6 * len(filenames_labels))
-    split_2 = int(0.8 * len(filenames_labels))
+    filenames_labels = filenames_labels.sample(frac=1, random_state=230).reset_index(drop=True)
+    split = int(0.9 * len(filenames_labels))
+    split_2 = int(0.95 * len(filenames_labels))
 
     # Split the images and the labels
     train_filenames = filenames_labels[:split]
