@@ -35,7 +35,7 @@ def launch_training_job(parent_dir, data_dir, job_name, params):
 
     # Launch training with this config
     cmd = "{python} train.py --model_dir {model_dir} --data_dir {data_dir}".format(python=PYTHON,
-            model_dir=model_dir, data_dir=data_dir)
+                                                                                   model_dir=model_dir, data_dir=data_dir)
     print(cmd)
     check_call(cmd, shell=True)
 
@@ -51,21 +51,23 @@ if __name__ == "__main__":
     # learning_rates = [1e-4, 1e-3, 1e-2]
     # weight_decays = [1e-4, 1e-3, 1e-2]
     # loss_weights = [32, 64]
-    num_channels_list = [32, 64, 128]
-
+    # num_channels_list = [32, 64, 128]
+    versions = [1, 2]
     # for learning_rate in learning_rates:
     # for weight_decay in weight_decays:
     # for loss_weight in loss_weights:
-    for num_channels in num_channels_list:
+    # for num_channels in num_channels_list:
+    for version in versions:
         # Modify the relevant parameter in params
         # params.learning_rate = learning_rate
         # params.weight_decay = weight_decay
         # params.loss_weight = loss_weight
-        params.num_channels = num_channels
+        params.version = version
 
         # Launch job (name has to be unique)
         # job_name = "learning_rate_{}".format(learning_rate)
         # job_name = "weight_decay_{}".format(weight_decay)
         # job_name = "loss_weight_{}".format(loss_weight)
-        job_name = "num_channels_{}".format(num_channels)
+        # job_name = "num_channels_{}".format(num_channels)
+        job_name = "version_{}".format(version)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
