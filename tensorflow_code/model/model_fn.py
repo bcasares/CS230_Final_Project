@@ -36,7 +36,6 @@ def build_model(is_training, inputs, params):
                 out = tf.layers.batch_normalization(out, momentum=bn_momentum, training=is_training)
             out = tf.nn.relu(out)
             out = tf.layers.max_pooling2d(out, 2, 2)
-            # regularizer = tf.contrib.layers.l2_regularizer(params.weight_decay)
     assert out.get_shape().as_list() == [None, 4, 4, num_channels * 8]
 
     out = tf.reshape(out, [-1, 4 * 4 * num_channels * 8])
@@ -75,20 +74,28 @@ def model_fn(mode, inputs, params, reuse=False):
     # MODEL: define the layers of the model
     with tf.variable_scope('model', reuse=reuse):
         # Compute the output distribution of the model and the predictions
+        # logits = build_model(is_training, inputs, params)
         logits = resnet.build_resnet_(is_training, inputs, params)
-
-        logits = build_model(is_training, inputs, params)
         predictions = tf.round(tf.nn.sigmoid(logits))
 
     # Define loss and accuracy
     # loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
-    # cyross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+    # crross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+    # loss = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(
+    # targets=labels, logits=logits, pos_weight=params.loss_weight))
 
     # A value pos_weights > 1 decreases the false negative count, hence increasing the recall.
-    weighted_cross_entropy = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(targets=labels, logits=logits,
-                                                                                     pos_weight=params.loss_weight))
-    loss = weighted_cross_entropy + \
-        tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+    weighted_cross_entropy = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(
+        targets=labels, logits=logits, pos_weight=params.loss_weight))
+    # If no loss_filter_fn is passed, assume we want the default behavior,
+    # which is that batch_normalization variables are excluded from loss.
+    # loss_filter_fn = None
+    # if not loss_filter_fn:
+    #     def loss_filter_fn(name):
+    #         return 'batch_normalization' not in name
+    # loss = weighted_cross_entropy + params.weight_decay * tf.add_n(
+    # [tf.nn.l2_loss(v) for v in tf.trainable_variables() if loss_filter_fn(v.name)])
+    loss = weighted_cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
     # loss = cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
     accuracy = tf.reduce_mean(tf.cast(tf.equal(labels, predictions), tf.float32))
 
@@ -119,7 +126,6 @@ def model_fn(mode, inputs, params, reuse=False):
             'precision': tf.metrics.precision(labels=labels, predictions=predictions),
             'recall': tf.metrics.recall(labels=labels, predictions=predictions)
         }
-
     # Group the update ops for the tf.metrics
     update_metrics_op = tf.group(*[op for _, op in metrics.values()])
 
