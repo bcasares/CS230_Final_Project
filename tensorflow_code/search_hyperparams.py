@@ -52,22 +52,26 @@ if __name__ == "__main__":
     # weight_decays = [1e-4, 1e-3, 1e-2]
     # loss_weights = [32, 64]
     # num_channels_list = [32, 64, 128]
-    versions = [1, 2]
+    # versions = [1, 2]
+    bottlenecks = [True, False]
     # for learning_rate in learning_rates:
     # for weight_decay in weight_decays:
     # for loss_weight in loss_weights:
     # for num_channels in num_channels_list:
-    for version in versions:
+    # for version in versions:
+    for bottleneck in bottlenecks:
         # Modify the relevant parameter in params
         # params.learning_rate = learning_rate
         # params.weight_decay = weight_decay
         # params.loss_weight = loss_weight
-        params.version = version
+        # params.version = version
+        params.bottleneck = bottleneck
 
         # Launch job (name has to be unique)
         # job_name = "learning_rate_{}".format(learning_rate)
         # job_name = "weight_decay_{}".format(weight_decay)
         # job_name = "loss_weight_{}".format(loss_weight)
         # job_name = "num_channels_{}".format(num_channels)
-        job_name = "version_{}".format(version)
+        # job_name = "version_{}".format(version)
+        job_name = "version_{}".format(bottleneck)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
