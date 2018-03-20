@@ -53,19 +53,23 @@ if __name__ == "__main__":
     # loss_weights = [32, 64]
     # num_channels_list = [32, 64, 128]
     # versions = [1, 2]
-    bottlenecks = [True, False]
+    # bottlenecks = [True, False]
+    block_sizes_list = [[3, 4, 6, 3], [3, 4, 23, 3], [3, 8, 36, 3]]
+    block_sizes_names = ["50", "101", "152"]
     # for learning_rate in learning_rates:
     # for weight_decay in weight_decays:
     # for loss_weight in loss_weights:
     # for num_channels in num_channels_list:
     # for version in versions:
-    for bottleneck in bottlenecks:
+    # for bottleneck in bottlenecks:
+    for i, block_sizes in enumerate(block_sizes_list):
         # Modify the relevant parameter in params
         # params.learning_rate = learning_rate
         # params.weight_decay = weight_decay
         # params.loss_weight = loss_weight
         # params.version = version
-        params.bottleneck = bottleneck
+        # params.bottleneck = bottleneck
+        params.block_sizes = block_sizes
 
         # Launch job (name has to be unique)
         # job_name = "learning_rate_{}".format(learning_rate)
@@ -73,5 +77,5 @@ if __name__ == "__main__":
         # job_name = "loss_weight_{}".format(loss_weight)
         # job_name = "num_channels_{}".format(num_channels)
         # job_name = "version_{}".format(version)
-        job_name = "version_{}".format(bottleneck)
+        job_name = "version_{}".format(block_sizes_names[i])
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
