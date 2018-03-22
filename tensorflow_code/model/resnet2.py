@@ -1,3 +1,4 @@
+
 #########################################################################
 #########################################################################
 # Disclaimer: This code was taken from the internat and modified for this project.
@@ -51,17 +52,17 @@ DEFAULT_VERSION = 2
 ################################################################################
 # Convenience functions for building the ResNet model.
 ################################################################################
-def batch_norm(inputs, training, data_format):
+def batch_norm(inputs, training):
     """Performs a batch normalization using a standard set of parameters."""
     # We set fused=True for a significant performance boost. See
     # https://www.tensorflow.org/performance/performance_guide#common_fused_ops
     return tf.layers.batch_normalization(
-        inputs=inputs, axis=1 if data_format == 'channels_first' else 3,
+        inputs=inputs,
         momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True,
         scale=True, training=training, fused=True)
 
 
-def fixed_padding(inputs, kernel_size, data_format):
+def fixed_padding(inputs, kernel_size):
     """Pads the input along the spatial dimensions independently of input size.
 
     Args:
@@ -79,35 +80,29 @@ def fixed_padding(inputs, kernel_size, data_format):
     pad_beg = pad_total // 2
     pad_end = pad_total - pad_beg
 
-    if data_format == 'channels_first':
-        padded_inputs = tf.pad(inputs, [[0, 0], [0, 0],
-                                        [pad_beg, pad_end], [pad_beg, pad_end]])
-    else:
-        padded_inputs = tf.pad(inputs, [[0, 0], [pad_beg, pad_end],
-                                        [pad_beg, pad_end], [0, 0]])
+    padded_inputs = tf.pad(inputs, [[0, 0], [pad_beg, pad_end], [pad_beg, pad_end], [0, 0]])
     return padded_inputs
 
 
-def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format, weight_decay=0.001):
+def conv2d_fixed_padding(inputs, filters, kernel_size, strides, weight_decay=0.001):
     """Strided 2-D convolution with explicit padding."""
     # The padding is consistent and is based only on `kernel_size`, not on the
     # dimensions of `inputs` (as opposed to using `tf.layers.conv2d` alone).
 
     if strides > 1:
-        inputs = fixed_padding(inputs, kernel_size, data_format)
-    print(inputs, filters, kernel_size, strides, data_format)
+        inputs = fixed_padding(inputs, kernel_size)
+    print(inputs, filters, kernel_size, strides)
     return tf.contrib.layers.conv2d(
         inputs=inputs, num_outputs=filters, kernel_size=kernel_size, stride=strides,
         padding=('SAME' if strides == 1 else 'VALID'),
         weights_regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
 
-################################################################################
+    ################################################################################
 # ResNet block definitions.
 ################################################################################
 
 
-def _building_block_v1(inputs, filters, training, projection_shortcut, strides,
-                       data_format, weight_decay=0.001):
+def _building_block_v1(inputs, filters, training, projection_shortcut, strides, weight_decay=0.001):
     """
     Convolution then batch normalization then ReLU as described by:
       Deep Residual Learning for Image Recognition
@@ -133,27 +128,25 @@ def _building_block_v1(inputs, filters, training, projection_shortcut, strides,
 
     if projection_shortcut is not None:
         shortcut = projection_shortcut(inputs, weight_decay)
-        shortcut = batch_norm(inputs=shortcut, training=training,
-                              data_format=data_format)
+        shortcut = batch_norm(inputs=shortcut, training=training)
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=3, strides=strides,
-        data_format=data_format, weight_decay=weight_decay)
-    inputs = batch_norm(inputs, training, data_format)
+        weight_decay=weight_decay)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=3, strides=1,
-        data_format=data_format, weight_decay=weight_decay)
-    inputs = batch_norm(inputs, training, data_format)
+        weight_decay=weight_decay)
+    inputs = batch_norm(inputs, training)
     inputs += shortcut
     inputs = tf.nn.relu(inputs)
 
     return inputs
 
 
-def _building_block_v2(inputs, filters, training, projection_shortcut, strides,
-                       data_format, weight_decay=0.001):
+def _building_block_v2(inputs, filters, training, projection_shortcut, strides, weight_decay=0.001):
     """
     Batch normalization then ReLu then convolution as described by:
       Identity Mappings in Deep Residual Networks
@@ -176,7 +169,7 @@ def _building_block_v2(inputs, filters, training, projection_shortcut, strides,
       The output tensor of the block.
     """
     shortcut = inputs
-    inputs = batch_norm(inputs, training, data_format)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
 
     # The projection shortcut should come after the first batch norm and ReLU
@@ -186,19 +179,19 @@ def _building_block_v2(inputs, filters, training, projection_shortcut, strides,
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=3, strides=strides,
-        data_format=data_format, weight_decay=weight_decay)
+        weight_decay=weight_decay)
 
-    inputs = batch_norm(inputs, training, data_format)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=3, strides=1,
-        data_format=data_format, weight_decay=weight_decay)
+        weight_decay=weight_decay)
 
     return inputs + shortcut
 
 
 def _bottleneck_block_v1(inputs, filters, training, projection_shortcut,
-                         strides, data_format, weight_decay=0.001):
+                         strides, weight_decay=0.001):
     """
     Similar to _building_block_v1(), except using the "bottleneck" blocks
     described in:
@@ -211,25 +204,24 @@ def _bottleneck_block_v1(inputs, filters, training, projection_shortcut,
 
     if projection_shortcut is not None:
         shortcut = projection_shortcut(inputs, weight_decay)
-        shortcut = batch_norm(inputs=shortcut, training=training,
-                              data_format=data_format)
+        shortcut = batch_norm(inputs=shortcut, training=training)
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=1, strides=1,
-        data_format=data_format, weight_decay=weight_decay)
-    inputs = batch_norm(inputs, training, data_format)
+        weight_decay=weight_decay)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=3, strides=strides,
-        data_format=data_format, weight_decay=weight_decay)
-    inputs = batch_norm(inputs, training, data_format)
+        weight_decay=weight_decay)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=4 * filters, kernel_size=1, strides=1,
-        data_format=data_format, weight_decay=weight_decay)
-    inputs = batch_norm(inputs, training, data_format)
+        weight_decay=weight_decay)
+    inputs = batch_norm(inputs, training)
     inputs += shortcut
     inputs = tf.nn.relu(inputs)
 
@@ -237,7 +229,7 @@ def _bottleneck_block_v1(inputs, filters, training, projection_shortcut,
 
 
 def _bottleneck_block_v2(inputs, filters, training, projection_shortcut,
-                         strides, data_format, weight_decay=0.001):
+                         strides, weight_decay=0.001):
     """
     Similar to _building_block_v2(), except using the "bottleneck" blocks
     described in:
@@ -253,7 +245,7 @@ def _bottleneck_block_v2(inputs, filters, training, projection_shortcut,
         by Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun, Jul 2016.
     """
     shortcut = inputs
-    inputs = batch_norm(inputs, training, data_format)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
 
     # The projection shortcut should come after the first batch norm and ReLU
@@ -263,25 +255,25 @@ def _bottleneck_block_v2(inputs, filters, training, projection_shortcut,
 
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=1, strides=1,
-        data_format=data_format, weight_decay=weight_decay)
+        weight_decay=weight_decay)
 
-    inputs = batch_norm(inputs, training, data_format)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=filters, kernel_size=3, strides=strides,
-        data_format=data_format, weight_decay=weight_decay)
+        weight_decay=weight_decay)
 
-    inputs = batch_norm(inputs, training, data_format)
+    inputs = batch_norm(inputs, training)
     inputs = tf.nn.relu(inputs)
     inputs = conv2d_fixed_padding(
         inputs=inputs, filters=4 * filters, kernel_size=1, strides=1,
-        data_format=data_format, weight_decay=weight_decay)
+        weight_decay=weight_decay)
 
     return inputs + shortcut
 
 
 def block_layer(inputs, filters, bottleneck, block_fn, blocks, strides,
-                training, name, data_format, weight_decay=0.001):
+                training, name, weight_decay=0.001):
     """Creates one layer of blocks for the ResNet model.
 
     Args:
@@ -309,14 +301,13 @@ def block_layer(inputs, filters, bottleneck, block_fn, blocks, strides,
     def projection_shortcut(inputs, weight_decay=0.001):
         return conv2d_fixed_padding(
             inputs=inputs, filters=filters_out, kernel_size=1, strides=strides,
-            data_format=data_format, weight_decay=weight_decay)
+            weight_decay=weight_decay)
 
     # Only the first block per block_layer uses projection_shortcut and strides
-    inputs = block_fn(inputs, filters, training, projection_shortcut, strides,
-                      data_format, weight_decay)
+    inputs = block_fn(inputs, filters, training, projection_shortcut, strides, weight_decay)
 
     for _ in range(1, blocks):
-        inputs = block_fn(inputs, filters, training, None, 1, data_format, weight_decay)
+        inputs = block_fn(inputs, filters, training, None, 1, weight_decay)
 
     return tf.identity(inputs, name)
 
@@ -325,11 +316,11 @@ class Model(object):
     """Base class for building the Resnet Model.
     """
 
-    def __init__(self, resnet_size, bottleneck, num_classes, num_filters,
+    def __init__(self, bottleneck, num_classes, num_filters,
                  kernel_size,
                  conv_stride, first_pool_size, first_pool_stride,
                  second_pool_size, second_pool_stride, block_sizes, block_strides,
-                 final_size, version=DEFAULT_VERSION, data_format=None, weight_decay=0.001):
+                 final_size, version=DEFAULT_VERSION, weight_decay=0.001):
         """Creates a model for classifying an image.
 
         Args:
@@ -358,16 +349,9 @@ class Model(object):
           data_format: Input format ('channels_last', 'channels_first', or None).
             If set to None, the format is dependent on whether a GPU is available.
         """
-        self.resnet_size = resnet_size
-
-        if not data_format:
-            data_format = (
-                'channels_first' if tf.test.is_built_with_cuda() else 'channels_last')
-
         self.resnet_version = version
         if version not in (1, 2):
-            raise ValueError(
-                "Resnet version should be 1 or 2. See README for citations.")
+            raise ValueError("Resnet version should be 1 or 2. See README for citations.")
 
         self.bottleneck = bottleneck
         if bottleneck:
@@ -381,7 +365,6 @@ class Model(object):
             else:
                 self.block_fn = _building_block_v2
 
-        self.data_format = data_format
         self.num_classes = num_classes
         self.num_filters = num_filters
         self.kernel_size = kernel_size
@@ -407,22 +390,15 @@ class Model(object):
           A logits Tensor with shape [<batch_size>, self.num_classes].
         """
 
-        if self.data_format == 'channels_first':
-            # Convert the inputs from channels_last (NHWC) to channels_first (NCHW).
-            # This provides a large performance boost on GPU. See
-            # https://www.tensorflow.org/performance/performance_guide#data_formats
-            inputs = tf.transpose(inputs, [0, 3, 1, 2])
-
         inputs = conv2d_fixed_padding(
             inputs=inputs, filters=self.num_filters, kernel_size=self.kernel_size,
-            strides=self.conv_stride, data_format=self.data_format, weight_decay=self.weight_decay)
+            strides=self.conv_stride, weight_decay=self.weight_decay)
         inputs = tf.identity(inputs, 'initial_conv')
 
         if self.first_pool_size:
             inputs = tf.layers.max_pooling2d(
                 inputs=inputs, pool_size=self.first_pool_size,
-                strides=self.first_pool_stride, padding='SAME',
-                data_format=self.data_format)
+                strides=self.first_pool_stride, padding='SAME')
             inputs = tf.identity(inputs, 'initial_max_pool')
 
         for i, num_blocks in enumerate(self.block_sizes):
@@ -431,19 +407,20 @@ class Model(object):
                 inputs=inputs, filters=num_filters, bottleneck=self.bottleneck,
                 block_fn=self.block_fn, blocks=num_blocks,
                 strides=self.block_strides[i], training=training,
-                name='block_layer{}'.format(i + 1), data_format=self.data_format, weight_decay=self.weight_decay)
+                name='block_layer{}'.format(i + 1), weight_decay=self.weight_decay)
 
-        inputs = batch_norm(inputs, training, self.data_format)
+        inputs = batch_norm(inputs, training)
         inputs = tf.nn.relu(inputs)
         inputs = tf.layers.average_pooling2d(
             inputs=inputs, pool_size=self.second_pool_size,
-            strides=self.second_pool_stride, padding='VALID',
-            data_format=self.data_format)
+            strides=self.second_pool_stride, padding='VALID')
         inputs = tf.identity(inputs, 'final_avg_pool')
 
-        inputs = tf.reshape(inputs, [-1, self.final_size])
+        # inputs = tf.reshape(inputs, [-1, self.final_size])
         # inputs = tf.reshape(inputs, [-1, 4 * 4 * self.num_filters * 8])
         # inputs = tf.reshape(inputs, [-1, 5184])
+        # inputs = tf.reshape(inputs, [-1, 1])
+        inputs = tf.contrib.layers.flatten(inputs)
         inputs = tf.contrib.layers.fully_connected(inputs=inputs,
                                                    num_outputs=self.num_classes,
                                                    weights_regularizer=tf.contrib.layers.l2_regularizer(self.weight_decay))
@@ -452,28 +429,12 @@ class Model(object):
 
 
 def build_resnet_(is_training, inputs, params):
-    resnet = Model(params.resnet_size, params.bottleneck, params.num_classes, params.num_filters,
+    resnet = Model(params.bottleneck, params.num_classes, params.num_filters,
                    params.kernel_size,
                    params.conv_stride, params.first_pool_size, params.first_pool_stride,
                    params.second_pool_size, params.second_pool_stride, params.block_sizes, params.block_strides,
-                   params.final_size, version=DEFAULT_VERSION, data_format='channels_last', weight_decay=params.weight_decay)
+                   params.num_classes, version=DEFAULT_VERSION, weight_decay=params.weight_decay)
     images = inputs['images']
     assert images.get_shape().as_list() == [None, params.image_size, params.image_size, 3]
     out = images
     return resnet.__call__(out, is_training)
-
-# @staticmethod
-# def build_resnet_34(input_shape, num_outputs):
-#     return ResnetBuilder.build(input_shape, num_outputs, basic_block, [3, 4, 6, 3])
-
-# @staticmethod
-# def build_resnet_50(input_shape, num_outputs):
-#     return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 4, 6, 3])
-
-# @staticmethod
-# def build_resnet_101(input_shape, num_outputs):
-#     return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 4, 23, 3])
-
-# @staticmethod
-# def build_resnet_152(input_shape, num_outputs):
-#     return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
