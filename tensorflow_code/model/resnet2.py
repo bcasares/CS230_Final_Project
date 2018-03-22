@@ -85,7 +85,7 @@ def fixed_padding(inputs, kernel_size):
     return padded_inputs
 
 
-def conv2d_fixed_padding(inputs, filters, kernel_size, strides, weight_decay=0.001):
+def conv2d_fixed_padding(inputs, filters, kernel_size, strides, weight_decay=0.0):
     """Strided 2-D convolution with explicit padding."""
     # The padding is consistent and is based only on `kernel_size`, not on the
     # dimensions of `inputs` (as opposed to using `tf.layers.conv2d` alone).
@@ -103,7 +103,7 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, weight_decay=0.0
 ################################################################################
 
 
-def _building_block_v1(inputs, filters, training, projection_shortcut, strides, weight_decay=0.001):
+def _building_block_v1(inputs, filters, training, projection_shortcut, strides, weight_decay=0.0):
     """
     Convolution then batch normalization then ReLU as described by:
       Deep Residual Learning for Image Recognition
@@ -147,7 +147,7 @@ def _building_block_v1(inputs, filters, training, projection_shortcut, strides, 
     return inputs
 
 
-def _building_block_v2(inputs, filters, training, projection_shortcut, strides, weight_decay=0.001):
+def _building_block_v2(inputs, filters, training, projection_shortcut, strides, weight_decay=0.0):
     """
     Batch normalization then ReLu then convolution as described by:
       Identity Mappings in Deep Residual Networks
@@ -192,7 +192,7 @@ def _building_block_v2(inputs, filters, training, projection_shortcut, strides, 
 
 
 def _bottleneck_block_v1(inputs, filters, training, projection_shortcut,
-                         strides, weight_decay=0.001):
+                         strides, weight_decay=0.0):
     """
     Similar to _building_block_v1(), except using the "bottleneck" blocks
     described in:
@@ -230,7 +230,7 @@ def _bottleneck_block_v1(inputs, filters, training, projection_shortcut,
 
 
 def _bottleneck_block_v2(inputs, filters, training, projection_shortcut,
-                         strides, weight_decay=0.001):
+                         strides, weight_decay=0.0):
     """
     Similar to _building_block_v2(), except using the "bottleneck" blocks
     described in:
@@ -274,7 +274,7 @@ def _bottleneck_block_v2(inputs, filters, training, projection_shortcut,
 
 
 def block_layer(inputs, filters, bottleneck, block_fn, blocks, strides,
-                training, name, weight_decay=0.001):
+                training, name, weight_decay=0.0):
     """Creates one layer of blocks for the ResNet model.
 
     Args:
@@ -299,7 +299,7 @@ def block_layer(inputs, filters, bottleneck, block_fn, blocks, strides,
     # Bottleneck blocks end with 4x the number of filters as they start with
     filters_out = filters * 4 if bottleneck else filters
 
-    def projection_shortcut(inputs, weight_decay=0.001):
+    def projection_shortcut(inputs, weight_decay=0.0):
         return conv2d_fixed_padding(
             inputs=inputs, filters=filters_out, kernel_size=1, strides=strides,
             weight_decay=weight_decay)
@@ -321,7 +321,7 @@ class Model(object):
                  kernel_size,
                  conv_stride, first_pool_size, first_pool_stride,
                  second_pool_size, second_pool_stride, block_sizes, block_strides,
-                 version=DEFAULT_VERSION, weight_decay=0.001):
+                 version=DEFAULT_VERSION, weight_decay=0.0):
         """Creates a model for classifying an image.
 
         Args:
