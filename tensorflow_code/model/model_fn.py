@@ -2,7 +2,7 @@
 
 
 import tensorflow as tf
-import model.resnet2 as resnet
+import model.resnet as resnet
 
 
 def build_model(is_training, inputs, params):
@@ -74,8 +74,8 @@ def model_fn(mode, inputs, params, reuse=False):
     # MODEL: define the layers of the model
     with tf.variable_scope('model', reuse=reuse):
         # Compute the output distribution of the model and the predictions
-        # logits = build_model(is_training, inputs, params) #use model.
-        logits = resnet.build_resnet_(is_training, inputs, params)  # use resnet
+        logits = build_model(is_training, inputs, params)  # use model.
+        # logits = resnet.build_resnet_(is_training, inputs, params)  # use resnet
         predictions = tf.round(tf.nn.sigmoid(logits))
 
     # Define loss and accuracy
