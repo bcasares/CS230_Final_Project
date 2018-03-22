@@ -321,7 +321,7 @@ class Model(object):
                  kernel_size,
                  conv_stride, first_pool_size, first_pool_stride,
                  second_pool_size, second_pool_stride, block_sizes, block_strides,
-                 final_size, version=DEFAULT_VERSION, weight_decay=0.001):
+                 version=DEFAULT_VERSION, weight_decay=0.001):
         """Creates a model for classifying an image.
 
         Args:
@@ -376,7 +376,6 @@ class Model(object):
         self.second_pool_stride = second_pool_stride
         self.block_sizes = block_sizes
         self.block_strides = block_strides
-        self.final_size = final_size
         self.weight_decay = weight_decay
 
     def __call__(self, inputs, training):
@@ -430,7 +429,7 @@ def build_resnet_(is_training, inputs, params):
                    params.kernel_size,
                    params.conv_stride, params.first_pool_size, params.first_pool_stride,
                    params.second_pool_size, params.second_pool_stride, params.block_sizes, params.block_strides,
-                   params.num_classes, version=DEFAULT_VERSION, weight_decay=params.weight_decay)
+                   version=DEFAULT_VERSION, weight_decay=params.weight_decay)
     images = inputs['images']
     assert images.get_shape().as_list() == [None, params.image_size, params.image_size, 3]
     out = images
