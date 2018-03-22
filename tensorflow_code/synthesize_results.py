@@ -5,7 +5,7 @@ import json
 import os
 
 from tabulate import tabulate
-
+import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--parent_dir', default='experiments/base_model',
@@ -49,7 +49,10 @@ def metrics_to_table(metrics):
     headers = metrics[list(metrics.keys())[0]].keys()
     table = [[subdir] + [values[h] for h in headers] for subdir, values in metrics.items()]
     res = tabulate(table, headers, tablefmt='pipe')
-
+    latex_headers = ["Experiment"]+list(headers)
+    latex_headers = [r"\textbf{" + header + "}" for header in latex_headers]
+    df = pd.DataFrame.from_records(table, columns=latex_headers).round(3)
+    print(df.to_latex(bold_rows=True, column_format= '| l | l | c | c | c | c | c |', escape=False))
     return res
 
 
