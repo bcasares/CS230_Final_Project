@@ -1,6 +1,7 @@
 #########################################################################
 #########################################################################
-# Disclaimer: This code was taken from the internat and modified for this project.
+# Disclaimer: This code was taken from the internet and modified for this project.
+# https://github.com/tensorflow/models/tree/master/official/resnet
 #########################################################################
 #########################################################################
 
