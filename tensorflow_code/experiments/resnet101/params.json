@@ -36,5 +36,5 @@
   "use_batch_norm": true,
   "loss_weight": 16.0,
   "num_parallel_calls": 4,
-  "resnet_size": 18
+  "resnet_size": 101
 }
