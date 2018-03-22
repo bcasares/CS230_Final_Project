@@ -1,7 +1,8 @@
 
 #########################################################################
 #########################################################################
-# Disclaimer: This code was taken from the internat and modified for this project.
+# Disclaimer: This code was taken from the internet and modified for this project.
+# https://github.com/tensorflow/models/tree/master/official/resnet
 #########################################################################
 #########################################################################
 
@@ -97,7 +98,7 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, weight_decay=0.0
         padding=('SAME' if strides == 1 else 'VALID'),
         weights_regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
 
-    ################################################################################
+################################################################################
 # ResNet block definitions.
 ################################################################################
 
@@ -416,10 +417,6 @@ class Model(object):
             strides=self.second_pool_stride, padding='VALID')
         inputs = tf.identity(inputs, 'final_avg_pool')
 
-        # inputs = tf.reshape(inputs, [-1, self.final_size])
-        # inputs = tf.reshape(inputs, [-1, 4 * 4 * self.num_filters * 8])
-        # inputs = tf.reshape(inputs, [-1, 5184])
-        # inputs = tf.reshape(inputs, [-1, 1])
         inputs = tf.contrib.layers.flatten(inputs)
         inputs = tf.contrib.layers.fully_connected(inputs=inputs,
                                                    num_outputs=self.num_classes,
