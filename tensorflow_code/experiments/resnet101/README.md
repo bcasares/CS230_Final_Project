@@ -5,7 +5,7 @@ Uncoment the following line in model/model.py
 ~~~
 and run the experiment with:
 ~~~
-|python train.py --model_dir experiments/renet101'
+python train.py --model_dir experiments/renet101
 ~~~
 
 from the following directory: CS230/Final_Project/CS230_Final_Project/tensorflow_code
