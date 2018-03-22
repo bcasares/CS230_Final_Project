@@ -2,7 +2,7 @@
 
 
 import tensorflow as tf
-import model.resnet as resnet
+import model.resnet2 as resnet
 
 
 def build_model(is_training, inputs, params):
@@ -74,39 +74,41 @@ def model_fn(mode, inputs, params, reuse=False):
     # MODEL: define the layers of the model
     with tf.variable_scope('model', reuse=reuse):
         # Compute the output distribution of the model and the predictions
-        # logits = build_model(is_training, inputs, params)
-        logits = resnet.build_resnet_(is_training, inputs, params)
+        # logits = build_model(is_training, inputs, params) #use model.
+        logits = resnet.build_resnet_(is_training, inputs, params)  # use resnet
         predictions = tf.round(tf.nn.sigmoid(logits))
 
     # Define loss and accuracy
-    # loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
-    # crross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
-    # loss = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(
-    # targets=labels, logits=logits, pos_weight=params.loss_weight))
 
+    # Uncomment for normal cross entropy loss.
+    # loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+
+    # Uncomment for normal cross entropy loss with regularization.
+    # crross_entropy = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
+    # loss = cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+
+    # Uncomment for weighted loss
+    # A value pos_weights > 1 decreases the false negative count, hence increasing the recall.
+    # loss = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(targets=labels, logits=logits, pos_weight=params.loss_weight))
+
+    # Uncomment for weighted loss with regularization
     # A value pos_weights > 1 decreases the false negative count, hence increasing the recall.
     weighted_cross_entropy = tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(
         targets=labels, logits=logits, pos_weight=params.loss_weight))
-    # If no loss_filter_fn is passed, assume we want the default behavior,
-    # which is that batch_normalization variables are excluded from loss.
-    # loss_filter_fn = None
-    # if not loss_filter_fn:
-    #     def loss_filter_fn(name):
-    #         return 'batch_normalization' not in name
-    # loss = weighted_cross_entropy + params.weight_decay * tf.add_n(
-    # [tf.nn.l2_loss(v) for v in tf.trainable_variables() if loss_filter_fn(v.name)])
     loss = weighted_cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
-    # loss = cross_entropy + tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+
     accuracy = tf.reduce_mean(tf.cast(tf.equal(labels, predictions), tf.float32))
 
     # Define training step that minimizes the loss with the Adam optimizer
     if is_training:
+        # Uncomment for decreasing learning rate
         # global_step = tf.train.get_or_create_global_step()
         # starter_learning_rate = params.learning_rate
         # learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
         #         100000, 0.96, staircase=True)
         # optimizer = tf.train.AdamOptimizer(learning_rate)
 
+        # Uncomment for specified learning rate
         optimizer = tf.train.AdamOptimizer(params.learning_rate)
         global_step = tf.train.get_or_create_global_step()
         if params.use_batch_norm:
@@ -137,16 +139,6 @@ def model_fn(mode, inputs, params, reuse=False):
     tf.summary.scalar('loss', loss)
     tf.summary.scalar('accuracy', accuracy)
     tf.summary.image('train_image', inputs['images'])
-
-    # TODO: if mode == 'eval': ?
-    # Add incorrectly labeled images
-    mask = tf.not_equal(labels, predictions)
-
-    # Add a different summary to know how they were misclassified
-    # for label in range(0, params.num_labels):
-    # mask_label = tf.logical_and(mask, tf.equal(predictions, label))
-    # incorrect_image_label = tf.boolean_mask(inputs['images'], mask_label)
-    # tf.summary.image('incorrectly_labeled_{}'.format(label), incorrect_image_label)
 
     # -----------------------------------------------------------
     # MODEL SPECIFICATION
