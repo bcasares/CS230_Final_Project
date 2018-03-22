@@ -1,0 +1,19 @@
+{
+  "use_random_flip": true,
+  "learning_rate": 0.001,
+  "bn_momentum": 0.9,
+  "image_size": 64,
+  "batch_size": 128,
+  "num_channels": 16,
+  "kernel_size": 3,
+  "num_epochs": 150,
+  "use_transpose": true,
+  "weight_decay": 0.00,
+  "num_labels": 17,
+  "num_classes": 17,
+  "save_summary_steps": 1,
+  "num_filters": 16,
+  "use_batch_norm": true,
+  "loss_weight": 16.0,
+  "num_parallel_calls": 4
+}
