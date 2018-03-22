@@ -1,0 +1,40 @@
+{
+  "use_random_flip": true,
+  "block_strides": [
+    1,
+    2,
+    2,
+    2
+  ],
+  "learning_rate": 0.001,
+  "block_sizes": [
+    3,
+    4,
+    23,
+    3
+  ],
+  "first_pool_stride": 0,
+  "bn_momentum": 0.9,
+  "image_size": 64,
+  "batch_size": 128,
+  "num_channels": 16,
+  "kernel_size": 3,
+  "second_pool_stride": 1,
+  "num_epochs": 150,
+  "use_transpose": true,
+  "weight_decay": 0.00,
+  "num_labels": 17,
+  "num_classes": 17,
+  "second_pool_size": 8,
+  "save_summary_steps": 1,
+  "conv_stride": 1,
+  "bottleneck": true,
+  "version": 1,
+  "final_size": 17,
+  "first_pool_size": 0,
+  "num_filters": 16,
+  "use_batch_norm": true,
+  "loss_weight": 16.0,
+  "num_parallel_calls": 4,
+  "resnet_size": 18
+}
